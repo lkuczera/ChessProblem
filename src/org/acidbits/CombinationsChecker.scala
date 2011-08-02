@@ -2,9 +2,10 @@ package org.acidbits
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.Set
 import scala.annotation.tailrec
-import CombinationsChecker._
+
 
 class CombinationsChecker {
+  import CombinationsChecker._
   /**
    * Counts possible combinations of placing Sequence of Pieces on board.
    * If its not possible to place all pieces throws and Exception
@@ -45,17 +46,18 @@ class CombinationsChecker {
       // try to place next piece on the board in this pos 
       // if possible then place next one recursively if not advance one pos further
       val solutions = scala.collection.mutable.Map[Board, Seq[(Int, Int)]]()
-      //for (i <- 0 to (board.length - 1); j <- 0 to (board(0).length - 1)) {
-        //if (board(i)(j) == Empty) {
-          //val pos = (i,j)
-      empties.map(pos => {
+      for (i <- 0 to (board.length - 1); j <- 0 to (board(0).length - 1)) {
+        if (board(i)(j) == Empty) {
+          val pos = (i,j)
+//      empties.map(pos => {
           if(canBePlacedHere(board, pieces.head, pos)) {
-        	val tmp = board.map(_.clone).asInstanceOf[Board]
+        	val tmp = board.map(_.clone)
         	putPiece(tmp, pieces.head, pos)
             solutions ++= countPieceSetComb(tmp, findEmptyPlaces(tmp), pieces.tail)
           } // advance if not possible to put piece here
-        })
-//      }
+//        })
+        }
+      }
       solutions
     }
   }
@@ -76,7 +78,7 @@ class CombinationsChecker {
     val lock = new Object
     toCheck.foreach(pos => {
         if(canBePlacedHere(board, piece, pos)) {
-	        val cloned = board.map(_.clone).asInstanceOf[Board]
+	        val cloned = board.map(_.clone)
 	        putPiece(cloned, piece, pos)
 	        //lock.synchronized { 
 	        	solutions += (cloned -> findEmptyPlaces(cloned))
@@ -299,7 +301,7 @@ class CombinationsChecker {
 }
 
 object CombinationsChecker {
- // type Board = ArrayBuffer[ArrayBuffer[Piece]]
+  type Board = ArrayBuffer[ArrayBuffer[Piece]]
   type Piece = Int
 
   val Empty = 0

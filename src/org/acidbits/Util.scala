@@ -1,6 +1,6 @@
 package org.acidbits
-import CombinationsChecker._
 object Util {
+  import CombinationsChecker._
   def printBoard(board: Board) = {
 	  println(boardToString(board))
   }
@@ -44,16 +44,9 @@ object Util {
     buf.toString
   }
   import scala.collection.mutable.ArrayBuffer
+  
   def emptyBoard(n: Int, m: Int): Board = {
-    val board = new Board
-    for(i <- 0 to n-1) {
-      board + new ArrayBuffer(m)
-      for(j <- 0 to m-1) {
-        board(i) + Empty
-      }
-    }
-    println(board)
-    board
+    ArrayBuffer.fill(n, m)(Empty)
   }
 
 
