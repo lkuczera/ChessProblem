@@ -88,7 +88,7 @@ object Tests {
   def checkTrafiguraSet() = {
     val s = new CombinationsChecker
     val board = emptyBoard(7, 8)
-    s.countCombinations(board, List(King, King, Queen, King, Queen)) //, Knight
+    s.countCombinations(board, List(King, King, Queen, Knight, Queen, Bishop, Bishop, Rook, Rook, Rook))
   }
 
   def testUpdate() = {

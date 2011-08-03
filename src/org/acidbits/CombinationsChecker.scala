@@ -2,12 +2,29 @@ package org.acidbits
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.Set
 import scala.annotation.tailrec
-
+/**
+ * @author Lukasz Kuczera
+ * 
+ * Checks all possible combinations of placing chess pieces on given board without
+ * threatening each other. In first iteration I used mutable data structures to conserve memory
+ * which I regretted later. Also used case objects for storing Pieces, fortunately Scala type
+ * aliasing allowed to switch to Ints easy (memory issues). It is possible to use mutable single board and 
+ * draw on that but more complex algorithm is needed for that (needs to do backward moves later on, cleaning board).
+ * This algorithm is not optimized, to make it much faster (it runs in about 150 seconds on my machine)
+ * it is possible to count empty spots on the board to avoid iterating over the whole board (on much packed board
+ * there is 7-200 less Empty spots than all possible placements). To make it more memory friendly I created map of
+ * possible empty spots on board of size 8x8 and their corresponding hash codes. That way every board only needs to
+ * know hash code of its empty spots list. Another good improvement would be using parallel collections or other
+ * means of parallelization, this solution uses mutable objects so using parallel collections is discouraged, synchronization
+ * inside mutating code snippets slows down whole computation, nverthless using immutable collections would open
+ * doors to easy prallelization available in Scala 2.9.
+ * 
+ */
 class CombinationsChecker {
   import CombinationsChecker._
   /**
    * Counts possible combinations of placing Sequence of Pieces on board.
-   * If its not possible to place all pieces throws and Exception
+   * If its not possible to place all pieces throws and Exception.
    */
   def countCombinations(board: Board, pieces: Seq[Piece]): scala.collection.Set[Board] = {
     require(board.length > 0, "Board width must be > 0")
@@ -188,7 +205,12 @@ class CombinationsChecker {
 
   def checkVertical(board: Board, pos: (Int, Int)): Boolean = updateVertical(board, pos, (board, pos) => ())
   def updateVertical(board: Board, pos: (Int, Int)): Boolean = updateVertical(board, pos, (board, pos) => putPieceWithoutBoardUpdate(board, Taken, pos))
-
+  /**
+   * For Queens and Rooks.
+   * @param board - board to check/update possible Takings
+   * @param pos - from where to start
+   * @param updateF - function run when it is possible to Take specified position (vertically from pos)
+   */
   def updateVertical(board: Board, pos: (Int, Int), updateF: (Board, (Int, Int)) => Unit): Boolean = {
     val x = pos._1
     val y = pos._2
@@ -206,7 +228,9 @@ class CombinationsChecker {
 
   def checkHorizontal(board: Board, pos: (Int, Int)): Boolean = updateHorizontal(board, pos, (board, pos) => ())
   def updateHorizontal(board: Board, pos: (Int, Int)): Boolean = updateHorizontal(board, pos, (board, pos) => putPieceWithoutBoardUpdate(board, Taken, pos))
-
+  /**
+   * For Queens and Rooks
+   */
   def updateHorizontal(board: Board, pos: (Int, Int), updateF: (Board, (Int, Int)) => Unit): Boolean = {
     val x = pos._1
     val y = pos._2
@@ -222,7 +246,9 @@ class CombinationsChecker {
 
   def checkDiagonal(board: Board, pos: (Int, Int)): Boolean = updateDiagonal(board, pos, (board, pos) => ())
   def updateDiagonal(board: Board, pos: (Int, Int)): Boolean = updateDiagonal(board, pos, (board, pos) => putPieceWithoutBoardUpdate(board, Taken, pos))
-  // FIXME - some issues with diagonal left to right updates
+  /**
+   * Used by Bishops and Queens
+   */
   def updateDiagonal(board: Board, pos: (Int, Int), updateF: (Board, (Int, Int)) => Unit): Boolean = {
     val dx = (pos._1 + 1) - (pos._2 + 1)
     val dy = (pos._2 + 1) - (pos._1 + 1)
@@ -318,6 +344,9 @@ class CombinationsChecker {
   }
 }
 
+/**
+ * Companion object with need types and functions.
+ */
 object CombinationsChecker {
   type Board = ArrayBuffer[ArrayBuffer[Piece]]
   type Piece = Int
@@ -331,7 +360,8 @@ object CombinationsChecker {
   val Queen = 6
 
   /**
-   * Generate all possible empty combinations for board of size 8x8
+   * Generates all possible combinations of empty places found on boards of
+   * sizes up to 8x8
    */
   lazy val emptiesMap = {
     val v = for (i <- 0 to 7; j <- 0 to 7) yield (i, j)
@@ -346,7 +376,6 @@ object CombinationsChecker {
   }
 
   private val combinations = Set[Set[(Int, Int)]]()
-
   @tailrec
   private def generateEmptiesSet(myList: Set[(Int, Int)]): Unit = {
     if (myList.size == 1) {
