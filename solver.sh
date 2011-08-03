@@ -1,0 +1,1 @@
+java -server -Xmx1g -Xms1g -XX:+UseCompressedOops -jar chess_solver.jar
