@@ -3,7 +3,6 @@ import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.Set
 import scala.annotation.tailrec
 
-
 class CombinationsChecker {
   import CombinationsChecker._
   /**
@@ -18,7 +17,18 @@ class CombinationsChecker {
     // rough check if there is space for pieces
     require(pieces.size < places)
     // checks possible placements
-    countPieceSetComb(board,findEmptyPlaces(board), pieces).keySet
+    val threes = pieces.sortWith(_ > _).grouped(3)
+    
+    @tailrec
+    def countRecur(boards: scala.collection.mutable.Set[Board], iter: Iterator[Seq[Piece]]): Set[Board] = {
+      if(! iter.hasNext) {
+        return boards
+      }
+      val pieces = iter.next
+      countRecur(boards.flatMap(countPieceSetComb(_, pieces).keySet), iter)
+    }
+    val sol = countRecur(Set(board), threes)
+    sol
   }
 
   /**
@@ -35,27 +45,29 @@ class CombinationsChecker {
    * Doesn't count permutations.
    */
   //@tailrec
-  private def countPieceSetComb(board: Board, empties: Seq[(Int, Int)], pieces: Seq[Piece]): scala.collection.mutable.Map[Board, Seq[(Int, Int)]] = {
+  private def countPieceSetComb(board: Board, pieces: Seq[Piece]): scala.collection.mutable.Map[Board, Int] = {
 
     // final piece in set get all possible combinations (solutions)
     if (pieces.size == 1) {
-      getPieceComb(board, empties, pieces.head)
+      getPieceComb(board, pieces.head)
     } else {
 
       //advance the board trying to place a piece on each position (this does backing)
       // try to place next piece on the board in this pos 
       // if possible then place next one recursively if not advance one pos further
-      val solutions = scala.collection.mutable.Map[Board, Seq[(Int, Int)]]()
+
+      val solutions = scala.collection.mutable.Map[Board, Int]()
+
       for (i <- 0 to (board.length - 1); j <- 0 to (board(0).length - 1)) {
         if (board(i)(j) == Empty) {
-          val pos = (i,j)
-//      empties.map(pos => {
-          if(canBePlacedHere(board, pieces.head, pos)) {
-        	val tmp = board.map(_.clone)
-        	putPiece(tmp, pieces.head, pos)
-            solutions ++= countPieceSetComb(tmp, findEmptyPlaces(tmp), pieces.tail)
+          val pos = (i, j)
+          //      empties.map(pos => {
+          if (canBePlacedHere(board, pieces.head, pos)) {
+            val tmp = board.map(_.clone)
+            putPiece(tmp, pieces.head, pos)
+            solutions ++= countPieceSetComb(tmp, pieces.tail)
           } // advance if not possible to put piece here
-//        })
+          //        })
         }
       }
       solutions
@@ -65,7 +77,7 @@ class CombinationsChecker {
   /**
    * Checks if not taking another piece by that move and if another piece or Taken on that position already
    */
-  
+
   private def canBePlacedHere(board: Board, piece: Piece, pos: (Int, Int)): Boolean = {
     placingOK_?(board, piece, pos) && checkTaking(board, piece, pos)
   }
@@ -73,23 +85,23 @@ class CombinationsChecker {
   /**
    * Returns all possible positions as this is last piece to be checked on board
    */
-  def getPieceComb(board: Board, toCheck: Seq[(Int,Int)], piece: Piece): scala.collection.mutable.Map[Board, Seq[(Int, Int)]] = {
-    val solutions = scala.collection.mutable.Map[Board, Seq[(Int, Int)]]()
-    val lock = new Object
-    toCheck.foreach(pos => {
-        if(canBePlacedHere(board, piece, pos)) {
-	        val cloned = board.map(_.clone)
-	        putPiece(cloned, piece, pos)
-	        //lock.synchronized { 
-	        	solutions += (cloned -> findEmptyPlaces(cloned))
-	        //}
-        }
-    })
+  def getPieceComb(board: Board, piece: Piece): scala.collection.mutable.Map[Board, Int] = {
+    val solutions = scala.collection.mutable.Map[Board, Int]()
+    //    toCheck.foreach(pos => {
+    for (i <- 0 to board.length - 1; j <- 0 to board(0).length - 1) {
+      val pos = (i, j)
+      if (canBePlacedHere(board, piece, pos)) {
+        val cloned = board.map(_.clone)
+        putPiece(cloned, piece, pos)
+        solutions += (cloned -> 1)
+      }
+    }
+    //    })
     solutions
   }
-  
+
   def findEmptyPlaces(board: Board) = {
-    for (i <- 0 to board.length - 1; j <- 0 to board(0).length - 1; if(board(i)(j) == Empty)) yield (i,j)
+    for (i <- 0 to board.length - 1; j <- 0 to board(0).length - 1; if (board(i)(j) == Empty)) yield (i, j)
   }
 
   def putPiece(board: Board, piece: Piece, pos: (Int, Int)) {
@@ -102,7 +114,6 @@ class CombinationsChecker {
     require(pos._1 < board.length, "Position x out of board: "+pos+" board: "+board)
     // check y bounds (checks only first array)
     require(pos._2 < board(0).length, "Position y out of board: "+pos+" board: "+board)
-
     if (placingOK_?(board, piece, pos)) board(pos._1).update(pos._2, piece)
     else throw new PlacingException("Not possible, expected Empty, got: "+board(pos._1)(pos._2))
   }
@@ -211,19 +222,26 @@ class CombinationsChecker {
 
   def checkDiagonal(board: Board, pos: (Int, Int)): Boolean = updateDiagonal(board, pos, (board, pos) => ())
   def updateDiagonal(board: Board, pos: (Int, Int)): Boolean = updateDiagonal(board, pos, (board, pos) => putPieceWithoutBoardUpdate(board, Taken, pos))
-
+  // FIXME - some issues with diagonal left to right updates
   def updateDiagonal(board: Board, pos: (Int, Int), updateF: (Board, (Int, Int)) => Unit): Boolean = {
     val dx = (pos._1 + 1) - (pos._2 + 1)
     val dy = (pos._2 + 1) - (pos._1 + 1)
     val x = if (dx > 0) dx else 0
     val y = if (dy > 0) dy else 0
     // diagonally from top left to bottom right
-    for (i <- x to board.length - 1; if ((x + i) != pos._1 && (y + 1) != pos._1)) {
+    for (i <- 0 to board.length - 1 - x; if ((x + i) != pos._1 && (y + i) != pos._2)) {
       try {
+        //        println("x:%s, y:%s, dx:%s, dy:%s board.length-1: %s".format(x,y,dx,dy, board.length-1))
+        val pos = (x + i, y + i)
+        //        println("i: "+i)
+        //        println("trying pos: "+pos)
         val onBoard = board(x + i)(y + i)
+
         if (!possible_?(onBoard)) {
+          //          println("imposible !! found: "+onBoard+" at position:"+pos)
           return false;
         }
+        //        println("ok updateting board")
         updateF(board, (x + i, y + i))
       } catch {
         case e: IndexOutOfBoundsException => // hit bottom
@@ -306,17 +324,17 @@ object CombinationsChecker {
 
   val Empty = 0
   val Taken = 1
-  val Queen = 2
-  val King = 3
-  val Bishop = 4
-  val Rook = 5
-  val Knight = 6
-  
+  val King = 2
+  val Bishop = 3
+  val Rook = 4
+  val Knight = 5
+  val Queen = 6
+
   /**
    * Generate all possible empty combinations for board of size 8x8
    */
   lazy val emptiesMap = {
-    val v = for (i <- 0 to 7; j <- 0 to 7) yield (i,j)
+    val v = for (i <- 0 to 7; j <- 0 to 7) yield (i, j)
     val set = Set[(Int, Int)]() ++ v
     generateEmptiesSet(set)
     val empties = combinations
@@ -326,23 +344,22 @@ object CombinationsChecker {
     require(hashCodes.size == hashCodes.toSet.size)
     hashCodes.zip(empties).toMap
   }
-  
+
   private val combinations = Set[Set[(Int, Int)]]()
-  
+
   @tailrec
   private def generateEmptiesSet(myList: Set[(Int, Int)]): Unit = {
-	if(myList.size == 1) {
-	  for(i <- 0 to 7; j <- 0 to 7) {
-	    combinations += myList + ((i,j))
-	  }
-	  return ()
-	}
-	for(i <- 0 to 7; j <- 0 to 7) {
-	    combinations += myList + ((i,j))
-	}
-	generateEmptiesSet(myList.tail)
+    if (myList.size == 1) {
+      for (i <- 0 to 7; j <- 0 to 7) {
+        combinations += myList + ((i, j))
+      }
+      return ()
+    }
+    for (i <- 0 to 7; j <- 0 to 7) {
+      combinations += myList + ((i, j))
+    }
+    generateEmptiesSet(myList.tail)
   }
 }
-
 
 class PlacingException(msg: String) extends RuntimeException(msg: String)

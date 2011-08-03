@@ -14,7 +14,7 @@ object Util {
   def pieceToString(piece: Piece) = {
     piece match {
       case King => "K"
-      case Knight => "G"
+      case Knight => "N"
       case Bishop => "B"
       case Queen => "Q"
       case Rook => "R"
