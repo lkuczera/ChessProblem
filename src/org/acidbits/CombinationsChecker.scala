@@ -16,8 +16,8 @@ import scala.annotation.tailrec
  * possible empty spots on board of size 8x8 and their corresponding hash codes. That way every board only needs to
  * know hash code of its empty spots list. Another good improvement would be using parallel collections or other
  * means of parallelization, this solution uses mutable objects so using parallel collections is discouraged, synchronization
- * inside mutating code snippets slows down whole computation, nverthless using immutable collections would open
- * doors to easy prallelization available in Scala 2.9.
+ * inside mutating code snippets slows down whole computation, nevertheless using immutable collections would open
+ * doors to easy parallelization available in Scala 2.9.
  * 
  */
 class CombinationsChecker {
@@ -78,13 +78,11 @@ class CombinationsChecker {
       for (i <- 0 to (board.length - 1); j <- 0 to (board(0).length - 1)) {
         if (board(i)(j) == Empty) {
           val pos = (i, j)
-          //      empties.map(pos => {
           if (canBePlacedHere(board, pieces.head, pos)) {
             val tmp = board.map(_.clone)
             putPiece(tmp, pieces.head, pos)
             solutions ++= countPieceSetComb(tmp, pieces.tail)
           } // advance if not possible to put piece here
-          //        })
         }
       }
       solutions
@@ -104,7 +102,6 @@ class CombinationsChecker {
    */
   def getPieceComb(board: Board, piece: Piece): scala.collection.mutable.Map[Board, Int] = {
     val solutions = scala.collection.mutable.Map[Board, Int]()
-    //    toCheck.foreach(pos => {
     for (i <- 0 to board.length - 1; j <- 0 to board(0).length - 1) {
       val pos = (i, j)
       if (canBePlacedHere(board, piece, pos)) {
@@ -113,7 +110,6 @@ class CombinationsChecker {
         solutions += (cloned -> 1)
       }
     }
-    //    })
     solutions
   }
 
@@ -122,6 +118,7 @@ class CombinationsChecker {
   }
 
   def putPiece(board: Board, piece: Piece, pos: (Int, Int)) {
+//    
     putPieceWithoutBoardUpdate(board, piece, pos)
     updateBoard(board, piece, pos)
   }
@@ -257,17 +254,12 @@ class CombinationsChecker {
     // diagonally from top left to bottom right
     for (i <- 0 to board.length - 1 - x; if ((x + i) != pos._1 && (y + i) != pos._2)) {
       try {
-        //        println("x:%s, y:%s, dx:%s, dy:%s board.length-1: %s".format(x,y,dx,dy, board.length-1))
         val pos = (x + i, y + i)
-        //        println("i: "+i)
-        //        println("trying pos: "+pos)
         val onBoard = board(x + i)(y + i)
 
         if (!possible_?(onBoard)) {
-          //          println("imposible !! found: "+onBoard+" at position:"+pos)
           return false;
         }
-        //        println("ok updateting board")
         updateF(board, (x + i, y + i))
       } catch {
         case e: IndexOutOfBoundsException => // hit bottom
@@ -302,7 +294,7 @@ class CombinationsChecker {
     true
   }
 
-  def checkKnight(board: Board, pos: (Int, Int)): Boolean = { //updateDiagonal(board, pos, (board, pos) => putPieceWithoutBoardUpdate(board, Taken, pos))
+  def checkKnight(board: Board, pos: (Int, Int)): Boolean = { 
     val positions = List(
       (pos._1 - 2, pos._2 - 1),
       (pos._1 - 1, pos._2 - 2),
@@ -376,6 +368,7 @@ object CombinationsChecker {
   }
 
   private val combinations = Set[Set[(Int, Int)]]()
+  
   @tailrec
   private def generateEmptiesSet(myList: Set[(Int, Int)]): Unit = {
     if (myList.size == 1) {

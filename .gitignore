@@ -1,2 +1,5 @@
 bin
 chess_solver.jar
+.scala_dependencies
+.DS_Store
+solution.bin
