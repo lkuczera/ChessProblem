@@ -10,7 +10,6 @@ object Main {
     val s = new CombinationsChecker
     val board = emptyBoard(7, 8)
     var combinations = scala.collection.mutable.Set[Board]()
-    val time0 = System.currentTimeMillis
     var time = System.currentTimeMillis
     val sol = s.countCombinations(board, List(King, King, Rook, Rook, Rook, Knight, Bishop, Bishop, Queen, Queen))
     val total = System.currentTimeMillis - time
